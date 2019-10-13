@@ -1,0 +1,154 @@
+<html>
+<head>
+    <title>Nano Distributed Vanity Address Generation</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="index.css">
+    <script src="curve25519.js"></script>
+    <script src="nanoAddressEncoding.js"></script>
+    <script src="index.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Nano Distributed Vanity Address Generation</h1>
+        <hr>
+        <div id="stage0" style="display: none">
+            <h3>Stage 0: This Tool and The Keys it Generates</h3>
+            <br>
+            This generates an expanded private key that derives a public key with a prefix of your chosing.
+            However, most wallets do not support expanded private keys.
+            Right now, the only wallet to do so is my fork of Nano Vault. Hopefully, my pull request will
+            be merged soon, and this feature will be available in mainline NanoVault.
+
+            You can find an instance of my NanoVault fork here:
+            <a href="https://plasmapower.github.io/nanovault/">https://plasmapower.github.io/nanovault/</a>
+            <br><br>
+            Here's a sample expanded private key to test with.
+            Of course, don't put any significant funds in here, because the private key is public:<br>
+            Expanded private key: <code>164C03C1F7632426DDF2D32FF1CA8199FC99D748E8DAF30E0C44C26DD2CD0150</code><br>
+            Account: <code>nano_1tests99rkn3caj4qbwe9o8co4i56bg7t8ehk14af51mww1gfajfq7d9hfu1</code><br>
+            <br>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="understandsKeysCheckbox">
+                <label class="form-check-label" for="understandsKeysCheckbox"><b>
+                    I understand the keys this tool generates will not work in most wallets
+                </b></label>
+            </div>
+        </div>
+        <div id="stage1" style="display: none">
+            <h3>Stage 1: Generating Your Base Key</h3>
+            <br>
+            Your base key is the base of the vanity key. The miner will get the base public key,
+            but not the base private key, which means they cannot find the private key of your vanity key.
+            This tool will save your base key in your browser (specifically localStorage), but
+            <b>you should backup this key anyway</b>. With it, you can continue where you left off.<br>
+            <br>
+            <form>
+                <div class="form-group row">
+                    <label for="basePrivateKeyInput" class="col-sm-3 col-form-label">Base Expanded Private Key</label>
+                    <div class="col-sm-9">
+                        <input type="text" autocomplete="off" maxlength="64" class="form-control"
+                            id="basePrivateKeyInput" placeholder="hex expanded private key">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="basePublicKeyOutput" class="col-sm-3 col-form-label">Base Public Key</label>
+                    <div class="col-sm-9">
+                        <input type="text" autocomplete="off" readonly class="form-control" id="basePublicKeyOutput">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary" id="generateBaseKeyBtn">Generate Random Base Key</button>
+                <br><br>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="backedUpBaseKeyCheckbox">
+                    <label class="form-check-label" for="backedUpBaseKeyCheckbox">
+                        I have backed up the base expanded private key
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div id="stage2" style="display: none">
+            <h3>Stage 2: Selecting a Miner</h3>
+            <br>
+            <div class="alert alert-info">
+                Don't know any Nano distributed vanity address miners?
+                Try joining the <a href="https://chat.nano.org/">Nano Discord server</a>.
+            </div>
+            <form>
+                <div class="form-group">
+                    <label for="minerUrlInput">
+                        Input the URL of a distributed vanity address miner:
+                    </label>
+                    <input type="text" autocomplete="off" id="minerUrlInput" class="form-control" placeholder="http://example.com/...">
+                </div>
+            </form>
+            <div class="alert alert-danger" id="minerContactFailed" style="display: none">
+                Failed to contact miner. Check that the URL is correct and the miner is online.<br>
+                <b>Error:</b> <code id="minerContactFailedError"></code>
+            </div>
+            <div id="minerInfo" style="display: none">
+                <b>Miner Name</b>: <code id="minerNameField"></code><br>
+                <b>Miner Maximum Characters</b>: <code id="minerMaxCharsField"></code>
+                <br><br>
+                <div id="minerDemandNone" style="display: none">
+                    This is a public miner, so anyone with the URL can use it.
+                </div>
+            </div>
+            <input type="checkbox" id="gotMinerInfo" hidden>
+        </div>
+        <div id="stage3" style="display: none">
+            <h3>Stage 3: Select prefix</h3>
+            <br>
+            <form class="form-inline">
+                <div class="form-group mb-2" id="prefixInputFormGroup">
+                    <label for="prefixInput">Address Prefix:&nbsp;</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">nano_</span>
+                        </div>
+                        <input type="text" autocomplete="off" class="form-control" placeholder="1myaddress" id="prefixInput" maxlength="60">
+                    </div>
+                </div>
+            </form>
+            <b>Note:</b> The first character of an address (after the <code>nano_</code>) must be either <code>1</code>
+            or <code>3</code>. If you don't care which your address is, you can use <code>*</code> as the first character
+            which will be twice as fast by ignoring the result of the first character.
+            <div class="alert alert-danger" id="prefixInvalidFirstCharacter" style="display: none">
+                The first character of your Nano address must be either <code>1</code>, <code>3</code>,
+                or either via <code>*</code>. Please see the note above.
+            </div>
+            <div class="alert alert-danger" id="prefixInvalidCharacter" style="display: none">
+                <code id="prefixInvalidCharacterCharacter"></code> is not a valid character in a Nano address.
+                Nano addresses can be composed of the numbers and lowercase, <b>except</b>
+                <code>0</code>, <code>2</code>, <code>l</code>, and <code>v</code>.
+            </div>
+            <div class="alert alert-danger" id="prefixTooLarge" style="display: none">
+                Your prefix is too large. Try reducing its length, or substituting characters with a wildcard (<code>*</code>).
+            </div>
+        </div>
+        <div id="stage4" style="display: none">
+            <h3>Stage 4: Waiting For Miner</h3>
+            <div id="waitingForMinerInfo">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+               <span>&nbsp;The miner is mining the vanity address.</span>
+            </div>
+            <div class="alert alert-warning" id="minerPollingFailed" style="display: none">
+                Failed to check mining status. Check that your internet is working and the miner is online.<br>
+                <b>Error:</b> <code id="minerPollingFailedError"></code>
+            </div>
+            <div id="minerResult" style="display: none">
+                <br>
+                Miner generated partial key: <code id="resultMinerKey"></code><br><br>
+                <b>Final expanded private key</b>: <code id="resultExpandedPrivateKey"></code><br>
+                <b>Final account</b>: <code id="resultAccount"></code><br>
+                <br>
+                <button id="clearStorageBtn" class="btn btn-danger">Clear Key from Browser Memory</button><br>
+            </div> 
+        </div>
+        <br>
+        <button type="button" class="btn btn-secondary" id="prevStageBtn" style="display: none">Previous Stage</button>
+        <button type="button" class="btn btn-primary" id="nextStageBtn" style="display: none">Next Stage</button>
+    </div>
+</body>
+</html>

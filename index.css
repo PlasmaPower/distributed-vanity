@@ -1,0 +1,16 @@
+#prevStageBtn {
+    float: left;
+}
+
+#nextStageBtn {
+    float: right;
+}
+
+#waitingForMinerInfo {
+    display: table;
+}
+
+#waitingForMinerInfo > span {
+    display: table-cell;
+    vertical-align: middle;
+}
