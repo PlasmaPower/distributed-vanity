@@ -165,7 +165,7 @@ async function checkMinerUrl(fromStageUpdate) {
     }
 }
 
-let loadingMinerUrl = localStorage.getItem("minerUrl");
+const loadingMinerUrl = localStorage.getItem("minerUrl");
 if (loadingMinerUrl) {
     minerUrlInput.value = loadingMinerUrl;
     minerUrlInUse = loadingMinerUrl;
@@ -246,7 +246,7 @@ prefixInput.addEventListener("keypress", onPrefixChange);
 prefixInput.addEventListener("keyup", onPrefixChange);
 prefixInput.addEventListener("change", onPrefixChange);
 
-let loadingPrefix = localStorage.getItem("prefix");
+const loadingPrefix = localStorage.getItem("prefix");
 if (loadingPrefix) {
     prefixInput.value = loadingPrefix;
     prefixInUse = loadingPrefix;
@@ -254,7 +254,35 @@ if (loadingPrefix) {
 
 let miningComplete = false;
 let checkMiningStatusInterval = null;
+
+function handleResult(result) {
+    if (typeof result !== "string" || result.length !== 64 ||
+            !/^[0-9a-fA-F]*$/.test(result)) {
+        throw new Error("Miner returned invalid result");
+    }
+    document.getElementById("waitingForMinerInfo").style.display = "none";
+    document.getElementById("minerResult").style.display = "block";
+    document.getElementById("resultMinerKey").innerText = result.toLowerCase();
+    const combinedKey = curve25519.addScalars(basePrivateKey, hexToUint8(result));
+    document.getElementById("resultExpandedPrivateKey").innerText = buf2hex(combinedKey);
+    const publicKey = curve25519.scalarBasePointMul(combinedKey);
+    const account = publicKeyToNanoAddress(publicKey);
+    document.getElementById("resultAccount").innerText = account;
+    clearInterval(checkMiningStatusInterval);
+    miningComplete = true;
+}
+
 async function checkMiningStatus() {
+    const loadingResult = localStorage.getItem("minerResult");
+    if (loadingResult) {
+        try {
+            handleResult(loadingResult);
+            return;
+        } catch (err) {
+            console.error(err);
+            localStorage.removeItem("minerResult");
+        }
+    }
     try {
         if (!prefixInUse) {
             throw new Error("Attempted to check mining status without prefix set");
@@ -277,20 +305,8 @@ async function checkMiningStatus() {
         }
 
         if (json.result) {
-            if (typeof json.result !== "string" || json.result.length !== 64 ||
-                    !/^[0-9a-fA-F]*$/.test(json.result)) {
-                throw new Error("Miner returned invalid result");
-            }
-            document.getElementById("waitingForMinerInfo").style.display = "none";
-            document.getElementById("minerResult").style.display = "block";
-            document.getElementById("resultMinerKey").innerText = json.result.toLowerCase();
-            const combinedKey = curve25519.addScalars(basePrivateKey, hexToUint8(json.result));
-            document.getElementById("resultExpandedPrivateKey").innerText = buf2hex(combinedKey);
-            const publicKey = curve25519.scalarBasePointMul(combinedKey);
-            const account = publicKeyToNanoAddress(publicKey);
-            document.getElementById("resultAccount").innerText = account;
-            clearInterval(checkMiningStatusInterval);
-            miningComplete = true;
+            handleResult(json.result);
+            localStorage.setItem("minerResult", json.result);
         }
 
         document.getElementById("minerPollingFailed").style.display = "none";
@@ -358,6 +374,7 @@ function updateStage(newStage) {
         }
         document.getElementById("waitingForMinerInfo").style.display = "table";
         document.getElementById("minerResult").style.display = "none";
+        localStorage.removeItem("minerResult");
     }
 }
 
@@ -365,6 +382,7 @@ const clearStorageBtn = document.getElementById("clearStorageBtn");
 clearStorageBtn.addEventListener("click", function() {
     if (confirm("Are you SURE you want to erase this key? It will not be recoverable unless you've backed it up.")) {
         localStorage.removeItem("stage");
+        localStorage.removeItem("minerResult");
         localStorage.removeItem("basePrivateKey");
         localStorage.removeItem("prefix");
         // Don't erase minerUrl, as it might be useful later.
@@ -379,7 +397,7 @@ nextStageBtn.addEventListener("click", function() {
 prevStageBtn.addEventListener("click", function() {
     if (stage == 4) {
         const msg = miningComplete ? ("Are you sure you want to go back? " +
-            "You may lose this address, so be sure to back it up first.") :
+            "YOU MAY LOSE THIS ADDRESS, so be sure to back it up first.") :
             "Are you sure you want to cancel the mining of this address?";
         if (confirm(msg)) {
             updateStage(2);
