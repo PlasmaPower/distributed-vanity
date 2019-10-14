@@ -358,7 +358,10 @@ function updateStage(newStage) {
 const clearStorageBtn = document.getElementById("clearStorageBtn");
 clearStorageBtn.addEventListener("click", function() {
     if (confirm("Are you SURE you want to erase this key? It will not be recoverable unless you've backed it up.")) {
-        localStorage.clear();
+        localStorage.removeItem("stage");
+        localStorage.removeItem("basePrivateKey");
+        localStorage.removeItem("prefix");
+        // Don't erase minerUrl, as it might be useful later.
         location.reload();
     }
 });
