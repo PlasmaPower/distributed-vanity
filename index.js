@@ -34,26 +34,16 @@ function disclaimerCheckboxChanged(checkboxStage, checked) {
     }
 }
 
-for (let checkboxStage = 0; checkboxStage < disclaimerCheckboxes.length; checkboxStage++) {
-    const name = disclaimerCheckboxes[checkboxStage];
-    if (!name) {
-        disclaimerCheckboxChanged(checkboxStage, false);
-        continue;
-    }
-    const elem = document.getElementById(name);
-    if (stage > checkboxStage) {
-        elem.checked = true;
-    }
-    elem.addEventListener("change", () => disclaimerCheckboxChanged(checkboxStage, elem.checked));
-    disclaimerCheckboxChanged(checkboxStage, elem.checked);
-}
-
 const basePrivateKeyInput = document.getElementById("basePrivateKeyInput");
 const basePublicKeyOutput = document.getElementById("basePublicKeyOutput");
+
+const backedUpBaseKeyCheckbox = document.getElementById("backedUpBaseKeyCheckbox");
 
 let basePrivateKey = null;
 let basePublicKeyString = null;
 function basePrivateKeyUpdated() {
+    backedUpBaseKeyCheckbox.disabled = true;
+    disclaimerCheckboxChanged(1, false);
     const keyString = basePrivateKeyInput.value;
     if (!/^[0-9a-fA-F]{64}$/.test(keyString)) {
         basePublicKeyOutput.value = "invalid base private key";
@@ -67,6 +57,8 @@ function basePrivateKeyUpdated() {
     basePrivateKey = key;
     basePublicKeyString = publicKeyString;
     basePublicKeyOutput.value = publicKeyString;
+    backedUpBaseKeyCheckbox.disabled = false;
+    disclaimerCheckboxChanged(1, backedUpBaseKeyCheckbox.checked);
 }
 
 if (localStorage.getItem("basePrivateKey")) {
@@ -80,7 +72,6 @@ basePrivateKeyInput.addEventListener("keyup", basePrivateKeyUpdated);
 basePrivateKeyInput.addEventListener("change", basePrivateKeyUpdated);
 
 const generateBaseKeyBtn = document.getElementById("generateBaseKeyBtn");
-const backedUpBaseKeyCheckbox = document.getElementById("backedUpBaseKeyCheckbox");
 
 generateBaseKeyBtn.addEventListener("click", function() {
     if (basePrivateKeyInput.value) {
@@ -309,6 +300,21 @@ async function checkMiningStatus() {
     }
 }
 
+for (let checkboxStage = 0; checkboxStage < disclaimerCheckboxes.length; checkboxStage++) {
+    const name = disclaimerCheckboxes[checkboxStage];
+    if (!name) {
+        disclaimerCheckboxChanged(checkboxStage, false);
+        continue;
+    }
+    const elem = document.getElementById(name);
+    if (stage > checkboxStage) {
+        elem.checked = true;
+        elem.disabled = false;
+    }
+    elem.addEventListener("change", () => disclaimerCheckboxChanged(checkboxStage, elem.checked && !elem.disabled));
+    disclaimerCheckboxChanged(checkboxStage, elem.checked && !elem.disabled);
+}
+
 function updateStage(newStage) {
     const oldStage = stage;
     if (newStage < 0 || newStage >= stages) {
@@ -332,7 +338,7 @@ function updateStage(newStage) {
     }
     if (stage < disclaimerCheckboxes.length && disclaimerCheckboxes[stage]) {
         let elem = document.getElementById(disclaimerCheckboxes[stage]);
-        disclaimerCheckboxChanged(stage, elem.checked);
+        disclaimerCheckboxChanged(stage, elem.checked && !elem.disabled);
     } else {
         disclaimerCheckboxChanged(stage, false);
     }
