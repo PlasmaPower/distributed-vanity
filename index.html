@@ -45,7 +45,8 @@
             Your base key is the base of the vanity key. The miner will get the base public key,
             but not the base private key, which means they cannot find the private key of your vanity key.
             This tool will save your base key in your browser (specifically localStorage), but
-            <b>you should backup this key anyway</b>. With it, you can continue where you left off.<br>
+            <b>you should save this private key anyway</b>. With it, you will likely be able to
+            continue where you left off.<br>
             <br>
             <form>
                 <div class="form-group row">
@@ -66,7 +67,7 @@
                 <div class="form-check form-check-inline">
                     <input class="form-check-input" type="checkbox" id="backedUpBaseKeyCheckbox">
                     <label class="form-check-label" for="backedUpBaseKeyCheckbox">
-                        I have backed up the base expanded private key
+                        I have saved the base expanded private key
                     </label>
                 </div>
             </form>
@@ -149,7 +150,8 @@
                 <b>Final account</b>: <code id="resultAccount"></code><br>
                 <br>
                 Here's my NanoVault fork where you can use this key:
-                <a href="https://plasmapower.github.io/nanovault/">https://plasmapower.github.io/nanovault/</a>
+                <a href="https://plasmapower.github.io/nanovault/">https://plasmapower.github.io/nanovault/</a><br>
+                Like any other (expanded) private key, <b>be sure to make a backup of the "Final expanded private key"</b>.
                 <br><br>
                 <button id="clearStorageBtn" class="btn btn-danger">Clear Key from Browser Memory</button><br>
             </div> 
